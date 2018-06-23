@@ -7,7 +7,6 @@ var express = require('express')
   , fs = require('fs')
   , path = require('path')
   , mixpanel = require('mixpanel')
-  , redis = require('redis-url').connect()
   , spawn = require('child_process').spawn
   , text = require('../lib/text');
 
@@ -191,57 +190,6 @@ function textRequestHandler(req, res, number, carrier, region, key) {
     doSendText({used_key: key});
     return;
   }
-
-  // If they don't have a special key, apply rate limiting and verification
-  var ipkey = 'textbelt:ip:' + ip + '_' + dateStr();
-  var phonekey = 'textbelt:phone:' + number;
-
-  redis.incr(phonekey, function(err, num) {
-    if (err) {
-      mpq.track('redis fail');
-      res.send({success:false, message:'Could not validate phone# quota.'});
-      return;
-    }
-
-    setTimeout(function() {
-      redis.decr(phonekey, function(err, num) {
-        if (err) {
-          mpq.track('failed to decr phone quota', {number: number});
-          console.log('*** WARNING failed to decr ' + number);
-        }
-      });
-    }, 1000*60*3);
-    if (num > 3) {
-      //mpq.track('exceeded phone quota', tracking_details);
-      res.send({success:false, message:'Exceeded quota for this phone number. ' + number});
-      return;
-    }
-
-    // now check against ip quota
-    redis.incr(ipkey, function(err, num) {
-      if (err) {
-        mpq.track('redis fail');
-        res.send({success:false, message:'Could not validate IP quota.'});
-        return;
-      }
-      if (num > 75) {
-        mpq.track('exceeded ip quota', tracking_details);
-        res.send({success:false, message:'Exceeded quota for this IP address. ' + ip});
-        return;
-      }
-      setTimeout(function() {
-        redis.decr(ipkey, function(err, num) {
-          if (err) {
-            mpq.track('failed to decr ip key', {ipkey: ipkey});
-            console.log('*** WARNING failed to decr ' + ipkey);
-          }
-        });
-      }, 1000*60*60*24);
-
-      // Cleared to send now
-      doSendText();
-    });     // end redis ipkey incr
-  });       // end redis phonekey incr
 }           // end textRequestHandler
 
 function dateStr() {
