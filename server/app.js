@@ -140,10 +140,10 @@ function textRequestHandler(req, res, number, carrier, region, key) {
       console.log("tried something");
       if (err) {
         res.send(_.extend(response_obj,
-                          {
-                            success:false,
-                            message:'Communication with SMS gateway failed.'
-                          }));
+          {
+            success:false,
+            message:'Communication with SMS gateway failed.'
+          }));
       }
       else {
         res.send(_.extend(response_obj, {success:true}));
@@ -151,13 +151,8 @@ function textRequestHandler(req, res, number, carrier, region, key) {
     });
   };
 
-  // Do they have a valid access key?
-  if (key && key in access_keys) {
-    console.log('Got valid key', key, '... not applying limits.');
-    // Skip verification
-    doSendText({used_key: key});
-    return;
-  }
+  console.log("send itttt");
+  doSendText({used_key: key});
 }           // end textRequestHandler
 
 function dateStr() {
