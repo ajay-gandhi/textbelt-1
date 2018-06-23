@@ -6,7 +6,6 @@ var express = require('express')
   , exec = require('child_process').exec
   , fs = require('fs')
   , path = require('path')
-  , mixpanel = require('mixpanel')
   , spawn = require('child_process').spawn
   , text = require('../lib/text');
 
@@ -115,13 +114,6 @@ function textRequestHandler(req, res, number, carrier, region, key) {
     // Handle problem with vtext where message would not get sent properly if it
     // contains a colon.
     message = ' ' + message;
-  }
-  if (ip in banned_ips) {
-    // Shadowban tor ips
-    setTimeout(function() {
-      res.send({success:false});
-    }, 1000);
-    return;
   }
 
   var shasum = crypto.createHash('sha1');
