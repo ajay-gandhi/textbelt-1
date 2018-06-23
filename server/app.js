@@ -136,7 +136,7 @@ function textRequestHandler(req, res, number, carrier, region, key) {
 
     // Time to actually send the message
     console.log("doing send text");
-    text.send(number, message, carrier, region, function(err) {
+    text.send(number, message.toString(), carrier, region, function(err) {
       console.log("tried something");
       if (err) {
         res.send(_.extend(response_obj,
