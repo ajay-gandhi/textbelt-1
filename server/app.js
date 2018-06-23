@@ -38,29 +38,7 @@ try {
   banned_numbers = {BLACKLIST: {}};
 }
 
-var banned_ips = {};
-try {
-  var banned_list = fs.readFileSync(path.join(__dirname, './torlist')).toString('utf-8').split('\n');
-  banned_list.map(function(ip) {
-    ip = ip.trim();
-    if (ip != '') {
-      banned_ips[ip] = true;
-    }
-  });
-  console.log(banned_list.length, 'banned ips loaded');
-} catch(e) {
-  console.log(e);
-}
 
-
-var mpq
-  , mixpanel_config;
-try {
-  mixpanel_config = require('./mixpanel_config.js');
-  mpq = new mixpanel.Client(mixpanel_config.api_key);
-} catch(e) {
-  mpq = {track: function() {}};
-}
 
 var access_keys;
 try {
@@ -85,6 +63,7 @@ app.get('/providers/:region', function(req, res) {
 });
 
 app.post('/text', function(req, res) {
+  console.log("got it");
   if (req.body.getcarriers != null && (req.body.getcarriers == 1 || req.body.getcarriers.toLowerCase() == 'true')) {
     res.send({success:true, carriers:Object.keys(carriers).sort()});
     return;
@@ -117,7 +96,6 @@ function textRequestHandler(req, res, number, carrier, region, key) {
   }
 
   if (!number || !req.body.message) {
-    mpq.track('incomplete request', {ip: ip, ip2: ip});
     res.send({success:false, message:'Number and message parameters are required.'});
     return;
   }
@@ -129,6 +107,8 @@ function textRequestHandler(req, res, number, carrier, region, key) {
       return;
     }
   }
+
+  console.log("trying this");
 
   var message = req.body.message;
   if (message.indexOf(':') > -1) {
@@ -155,7 +135,6 @@ function textRequestHandler(req, res, number, carrier, region, key) {
   };
 
   if (banned_numbers.BLACKLIST[number]) {
-    mpq.track('banned number', tracking_details);
     res.send({success:false,message:'Sorry, texts to this number are disabled.'});
     return;
   }
@@ -168,7 +147,6 @@ function textRequestHandler(req, res, number, carrier, region, key) {
     text.send(number, message, carrier, region, function(err) {
       console.log("tried something");
       if (err) {
-        mpq.track('sendText failed', tracking_details);
         res.send(_.extend(response_obj,
                           {
                             success:false,
@@ -176,7 +154,6 @@ function textRequestHandler(req, res, number, carrier, region, key) {
                           }));
       }
       else {
-        mpq.track('sendText success', tracking_details);
         res.send(_.extend(response_obj, {success:true}));
       }
     });
@@ -186,9 +163,6 @@ function textRequestHandler(req, res, number, carrier, region, key) {
   if (key && key in access_keys) {
     console.log('Got valid key', key, '... not applying limits.');
     // Skip verification
-    mpq.track('sendText skipping verification', _.extend(tracking_details, {
-      key: key,
-    }));
     doSendText({used_key: key});
     return;
   }
