@@ -164,7 +164,9 @@ function textRequestHandler(req, res, number, carrier, region, key) {
     response_obj = response_obj || {};
 
     // Time to actually send the message
+    console.log("doing send text");
     text.send(number, message, carrier, region, function(err) {
+      console.log("tried something");
       if (err) {
         mpq.track('sendText failed', tracking_details);
         res.send(_.extend(response_obj,
